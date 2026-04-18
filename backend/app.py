@@ -6,9 +6,13 @@ import os
 
 app = Flask(__name__)
 
-# Allow all origins in development; in production set CORS_ORIGIN env var
-cors_origin = os.environ.get('CORS_ORIGIN', '*')
-CORS(app, origins=cors_origin)
+# Explicit CORS: allow the Amplify frontend (and any origin during dev)
+# supports_credentials must be False when using wildcard origin
+CORS(app,
+     resources={r"/api/*": {"origins": "*"}},
+     allow_headers=["Content-Type", "Authorization"],
+     methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+     supports_credentials=False)
 
 init_db()
 
