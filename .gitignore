@@ -1,13 +1,16 @@
 # Dependencies
 node_modules/
 .env
+
+# Python
 __pycache__/
 *.pyc
+*.pyo
 
-# Database
+# Database - do NOT commit the local DB
 backend/events.db
 
-# Build
+# Build output
 frontend/dist/
 frontend/build/
 

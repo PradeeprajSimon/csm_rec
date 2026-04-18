@@ -5,9 +5,9 @@ import EventList from './components/EventList';
 import EventForm from './components/EventForm';
 import DeleteConfirmation from './components/DeleteConfirmation';
 
-// Amplify Data Client
-import { generateClient } from 'aws-amplify/data';
-const client = generateClient();
+// Uses VITE_API_URL env variable in production (set in Amplify Console)
+// Falls back to localhost for local development
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/events';
 
 function App() {
   const [events, setEvents] = useState([]);
@@ -26,21 +26,13 @@ function App() {
     setLoading(true);
     setError(null);
     try {
-      // Amplify Data Fetch
-      const { data: items, errors } = await client.models.Event.list();
-      if (errors) throw new Error(errors[0].message);
-      
-      // Sort in memory (DynamoDB list is not sorted by default)
-      const sortedEvents = [...items].sort((a, b) => {
-        const dateA = new Date(`${a.date}T${a.time}`);
-        const dateB = new Date(`${b.date}T${b.time}`);
-        return dateA - dateB;
-      });
-
-      setEvents(sortedEvents);
+      const response = await fetch(API_URL);
+      if (!response.ok) throw new Error('Failed to fetch events');
+      const data = await response.json();
+      setEvents(data);
     } catch (err) {
       console.error('Error fetching events:', err);
-      setError('Connection to cloud database failed. Ensure you are logged into AWS and the backend is deployed.');
+      setError('Cannot connect to the backend. Please check your API URL.');
     } finally {
       setLoading(false);
     }
@@ -63,45 +55,43 @@ function App() {
 
   const handleFormSubmit = async (formData) => {
     try {
-      if (eventToEdit) {
-        // Amplify Update
-        const { errors } = await client.models.Event.update({
-          id: eventToEdit.id,
-          ...formData
-        });
-        if (errors) throw new Error(errors[0].message);
-      } else {
-        // Amplify Create
-        const { errors } = await client.models.Event.create(formData);
-        if (errors) throw new Error(errors[0].message);
+      const method = eventToEdit ? 'PUT' : 'POST';
+      const url = eventToEdit ? `${API_URL}/${eventToEdit.id}` : API_URL;
+
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+
+      if (response.ok) {
+        fetchEvents();
+        setIsFormOpen(false);
       }
-      
-      fetchEvents();
-      setIsFormOpen(false);
     } catch (error) {
       console.error('Error saving event:', error);
-      alert('Error saving event: ' + error.message);
     }
   };
 
   const confirmDelete = async () => {
     try {
-      // Amplify Delete
-      const { errors } = await client.models.Event.delete({ id: eventIdToDelete });
-      if (errors) throw new Error(errors[0].message);
+      const response = await fetch(`${API_URL}/${eventIdToDelete}`, {
+        method: 'DELETE'
+      });
 
-      fetchEvents();
-      setIsDeleteOpen(false);
+      if (response.ok) {
+        fetchEvents();
+        setIsDeleteOpen(false);
+      }
     } catch (error) {
       console.error('Error deleting event:', error);
-      alert('Error deleting event: ' + error.message);
     }
   };
 
   return (
     <div className="App">
       <Navbar onAddClick={handleAddClick} />
-      
+
       <main className="container">
         <header className="page-header">
           <h2>Upcoming Events</h2>
@@ -117,24 +107,24 @@ function App() {
         ) : loading ? (
           <div className="loader">Loading events...</div>
         ) : (
-          <EventList 
-            events={events} 
-            onEdit={handleEditClick} 
-            onDelete={handleDeleteClick} 
+          <EventList
+            events={events}
+            onEdit={handleEditClick}
+            onDelete={handleDeleteClick}
           />
         )}
       </main>
 
-      <EventForm 
-        isOpen={isFormOpen} 
-        onClose={() => setIsFormOpen(false)} 
+      <EventForm
+        isOpen={isFormOpen}
+        onClose={() => setIsFormOpen(false)}
         onSubmit={handleFormSubmit}
         eventToEdit={eventToEdit}
       />
 
-      <DeleteConfirmation 
-        isOpen={isDeleteOpen} 
-        onCancel={() => setIsDeleteOpen(false)} 
+      <DeleteConfirmation
+        isOpen={isDeleteOpen}
+        onCancel={() => setIsDeleteOpen(false)}
         onConfirm={confirmDelete}
       />
     </div>
