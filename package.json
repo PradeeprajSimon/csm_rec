@@ -1,0 +1,17 @@
+{
+  "name": "evently-serverless",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "build": "cd frontend && npm install && npm run build"
+  },
+  "devDependencies": {
+    "@aws-amplify/backend": "^1.13.0",
+    "@aws-amplify/backend-cli": "^1.4.3",
+    "aws-cdk": "^2.1000.0",
+    "aws-cdk-lib": "^2.1000.0",
+    "constructs": "^10.0.0",
+    "esbuild": "^0.25.0",
+    "typescript": "^5.0.0"
+  }
+}
