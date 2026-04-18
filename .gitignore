@@ -1,0 +1,17 @@
+# Dependencies
+node_modules/
+.env
+__pycache__/
+*.pyc
+
+# Database
+backend/events.db
+
+# Build
+frontend/dist/
+frontend/build/
+
+# IDE
+.vscode/
+.idea/
+.DS_Store
