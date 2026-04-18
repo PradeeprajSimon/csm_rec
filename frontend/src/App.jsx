@@ -5,9 +5,9 @@ import EventList from './components/EventList';
 import EventForm from './components/EventForm';
 import DeleteConfirmation from './components/DeleteConfirmation';
 
-// Uses VITE_API_URL env variable in production (set in Amplify Console)
-// Falls back to localhost for local development
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/events';
+// PRODUCTION: Replace the URL below with your Render backend URL after deploying it
+// e.g. https://evently-backend.onrender.com/api/events
+const API_URL = import.meta.env.VITE_API_URL || 'https://evently-backend.onrender.com/api/events';
 
 function App() {
   const [events, setEvents] = useState([]);
