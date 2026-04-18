@@ -1,108 +1,48 @@
-# Evently - Event Planner Application
+# Evently - Serverless Event Planner
 
-A professional Event Planner application built with a React frontend and a Flask backend.
+A premium Event Planner application built with a **Full-Stack Serverless** architecture using **AWS Amplify Gen 2**.
 
-## 🚀 Local Setup
+## 🚀 Architecture
+- **Frontend**: React (Vite)
+- **API**: AWS AppSync (GraphQL)
+- **Database**: Amazon DynamoDB
+- **Hosting**: AWS Amplify Hosting
 
-### 1. Backend Setup
-1. Navigate to the `backend` folder:
+## 🛠️ Local Development
+
+### 1. Prerequisites
+- Node.js installed.
+- AWS Account and CLI configured.
+
+### 2. Startup
+1. **Infrastructure**: In the root directory, run the Amplify sandbox to provision your cloud backend:
    ```bash
-   cd backend
+   npx ampx sandbox
    ```
-2. Install dependencies:
-   ```bash
-   pip install -r ../requirements.txt
-   ```
-3. Run the Flask server:
-   ```bash
-   python app.py
-   ```
-   The backend will run on `http://localhost:5000`.
+   *This will generate `amplify_outputs.json` which the frontend needs.*
 
-### 2. Frontend Setup
-1. Navigate to the `frontend` folder:
+2. **Frontend**: In a separate terminal:
    ```bash
    cd frontend
-   ```
-2. Install dependencies:
-   ```bash
    npm install
-   ```
-3. Run the development server:
-   ```bash
    npm run dev
    ```
-   The frontend will run on a port (usually `5173`).
+
+## ☁️ Continuous Deployment to AWS
+
+Since your code is already on GitHub, Amplify will automatically detect the Gen 2 backend:
+
+1. Go to the **[AWS Amplify Console](https://console.aws.amazon.com/amplify/home)**.
+2. Select your repository: **`PradeeprajSimon/csm_rec`**.
+3. Amplify will detect the `amplify/` folder and deploy:
+   - The DynamoDB tables.
+   - The AppSync API.
+   - The React Frontend.
+4. No further configuration is needed! The app is now fully serverless and scales automatically.
 
 ---
 
-## ☁️ AWS EC2 Deployment Guide (Free Tier)
-
-Follow these steps to deploy your application to an AWS EC2 `t2.micro` instance.
-
-### 1. Launch Instance
-- Use **Ubuntu 22.04 LTS**.
-- Select `t2.micro` (Free Tier eligible).
-- **Security Groups**: Add rules for Port 80 (HTTP), Port 22 (SSH), and Port 5000 (Flask).
-
-### 2. Configure Server
-SSH into your instance:
-```bash
-ssh -i "your-key.pem" ubuntu@your-ec2-ip
-```
-
-Install dependencies:
-```bash
-sudo apt update
-sudo apt install -y python3-pip nodejs npm nginx
-```
-
-### 3. Deploy Backend
-1. Clone your project or upload files.
-2. Install Python requirements:
-   ```bash
-   pip3 install flask flask-cors gunicorn
-   ```
-3. Run with Gunicorn (production server):
-   ```bash
-   gunicorn --bind 0.0.0.0:5000 app:app
-   ```
-
-### 4. Deploy Frontend
-1. Build the React app:
-   ```bash
-   cd frontend
-   npm install
-   npm run build
-   ```
-2. Move the build files to Nginx:
-   ```bash
-   sudo cp -r dist/* /var/www/html/
-   ```
-
-### 5. Nginx Configuration
-Edit the default config: `sudo nano /etc/nginx/sites-available/default`
-```nginx
-server {
-    listen 80;
-    server_name your_ec2_ip;
-
-    location / {
-        root /var/www/html;
-        index index.html;
-        try_files $uri $uri/ /index.html;
-    }
-
-    location /api {
-        proxy_pass http://localhost:5000;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-    }
-}
-```
-Restart Nginx:
-```bash
-sudo systemctl restart nginx
-```
-
-Now you can access your app via the EC2 Public IP!
+### Key Features
+- **Serverless CRUD**: Uses Amplify's type-safe data client.
+- **Glassmorphic Design**: Professional UI with premium aesthetics.
+- **CI/CD**: Automatic deployments on every `git push`.

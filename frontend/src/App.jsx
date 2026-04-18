@@ -5,7 +5,9 @@ import EventList from './components/EventList';
 import EventForm from './components/EventForm';
 import DeleteConfirmation from './components/DeleteConfirmation';
 
-const API_URL = 'http://localhost:5000/api/events';
+// Amplify Data Client
+import { generateClient } from 'aws-amplify/data';
+const client = generateClient();
 
 function App() {
   const [events, setEvents] = useState([]);
@@ -24,13 +26,21 @@ function App() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch(API_URL);
-      if (!response.ok) throw new Error('Failed to fetch events');
-      const data = await response.json();
-      setEvents(data);
+      // Amplify Data Fetch
+      const { data: items, errors } = await client.models.Event.list();
+      if (errors) throw new Error(errors[0].message);
+      
+      // Sort in memory (DynamoDB list is not sorted by default)
+      const sortedEvents = [...items].sort((a, b) => {
+        const dateA = new Date(`${a.date}T${a.time}`);
+        const dateB = new Date(`${b.date}T${b.time}`);
+        return dateA - dateB;
+      });
+
+      setEvents(sortedEvents);
     } catch (err) {
       console.error('Error fetching events:', err);
-      setError('Backend server disconnected. Please start the Flask app.');
+      setError('Connection to cloud database failed. Ensure you are logged into AWS and the backend is deployed.');
     } finally {
       setLoading(false);
     }
@@ -53,36 +63,38 @@ function App() {
 
   const handleFormSubmit = async (formData) => {
     try {
-      const method = eventToEdit ? 'PUT' : 'POST';
-      const url = eventToEdit ? `${API_URL}/${eventToEdit.id}` : API_URL;
-
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
-
-      if (response.ok) {
-        fetchEvents();
-        setIsFormOpen(false);
+      if (eventToEdit) {
+        // Amplify Update
+        const { errors } = await client.models.Event.update({
+          id: eventToEdit.id,
+          ...formData
+        });
+        if (errors) throw new Error(errors[0].message);
+      } else {
+        // Amplify Create
+        const { errors } = await client.models.Event.create(formData);
+        if (errors) throw new Error(errors[0].message);
       }
+      
+      fetchEvents();
+      setIsFormOpen(false);
     } catch (error) {
       console.error('Error saving event:', error);
+      alert('Error saving event: ' + error.message);
     }
   };
 
   const confirmDelete = async () => {
     try {
-      const response = await fetch(`${API_URL}/${eventIdToDelete}`, {
-        method: 'DELETE'
-      });
+      // Amplify Delete
+      const { errors } = await client.models.Event.delete({ id: eventIdToDelete });
+      if (errors) throw new Error(errors[0].message);
 
-      if (response.ok) {
-        fetchEvents();
-        setIsDeleteOpen(false);
-      }
+      fetchEvents();
+      setIsDeleteOpen(false);
     } catch (error) {
       console.error('Error deleting event:', error);
+      alert('Error deleting event: ' + error.message);
     }
   };
 
