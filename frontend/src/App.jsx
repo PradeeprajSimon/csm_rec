@@ -5,9 +5,8 @@ import EventList from './components/EventList';
 import EventForm from './components/EventForm';
 import DeleteConfirmation from './components/DeleteConfirmation';
 
-// PRODUCTION: Replace the URL below with your Render backend URL after deploying it
-// e.g. https://evently-backend.onrender.com/api/events
-const API_URL = import.meta.env.VITE_API_URL || 'https://evently-backend.onrender.com/api/events';
+// Backend hosted on Render.com (serverless-friendly free tier)
+const API_URL = import.meta.env.VITE_API_URL || 'https://evently-backend-9dpq.onrender.com/api/events';
 
 function App() {
   const [events, setEvents] = useState([]);
