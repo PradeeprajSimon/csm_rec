@@ -5,8 +5,10 @@ import EventList from './components/EventList';
 import EventForm from './components/EventForm';
 import DeleteConfirmation from './components/DeleteConfirmation';
 
-// Backend hosted on Render.com (serverless-friendly free tier)
+// Backend hosted on Render.com (free tier — may need a cold-start wake-up)
 const API_URL = import.meta.env.VITE_API_URL || 'https://evently-backend-9dpq.onrender.com/api/events';
+const MAX_RETRIES = 3;
+const RETRY_DELAY_MS = 10000; // 10s between retries (Render cold start ~30s)
 
 function App() {
   const [events, setEvents] = useState([]);
@@ -16,24 +18,42 @@ function App() {
   const [eventIdToDelete, setEventIdToDelete] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [statusMsg, setStatusMsg] = useState('Loading events...');
 
   useEffect(() => {
     fetchEvents();
   }, []);
 
-  const fetchEvents = async () => {
+  const fetchEvents = async (attempt = 1) => {
     setLoading(true);
     setError(null);
+    if (attempt === 1) setStatusMsg('Connecting to backend...');
+    else setStatusMsg(`Backend is waking up... (attempt ${attempt}/${MAX_RETRIES}). Please wait ☕`);
+
     try {
-      const response = await fetch(API_URL);
-      if (!response.ok) throw new Error('Failed to fetch events');
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15000); // 15s timeout per attempt
+      const response = await fetch(API_URL, { signal: controller.signal });
+      clearTimeout(timeout);
+
+      if (!response.ok) throw new Error(`Server error: ${response.status}`);
       const data = await response.json();
       setEvents(data);
+      setStatusMsg('Loading events...');
     } catch (err) {
-      console.error('Error fetching events:', err);
-      setError('Cannot connect to the backend. Please check your API URL.');
+      console.error(`Attempt ${attempt} failed:`, err);
+      if (attempt < MAX_RETRIES) {
+        setStatusMsg(`Backend is waking up (attempt ${attempt}/${MAX_RETRIES})... retrying in 10s ☕`);
+        setTimeout(() => fetchEvents(attempt + 1), RETRY_DELAY_MS);
+        return; // keep loading=true during retry
+      }
+      setError(
+        'Cannot connect to the backend. The server may still be waking up — ' +
+        'please click "Retry Connection" in ~30 seconds.'
+      );
     } finally {
-      setLoading(false);
+      // Only stop loading if we are NOT scheduling a retry
+      if (attempt >= MAX_RETRIES || !error) setLoading(false);
     }
   };
 
@@ -104,7 +124,7 @@ function App() {
             <button className="btn-outline" onClick={fetchEvents}>Retry Connection</button>
           </div>
         ) : loading ? (
-          <div className="loader">Loading events...</div>
+          <div className="loader">{statusMsg}</div>
         ) : (
           <EventList
             events={events}
