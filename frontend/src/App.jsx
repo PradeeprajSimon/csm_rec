@@ -30,30 +30,35 @@ function App() {
     if (attempt === 1) setStatusMsg('Connecting to backend...');
     else setStatusMsg(`Backend is waking up... (attempt ${attempt}/${MAX_RETRIES}). Please wait ☕`);
 
+    // Use a local flag — finally always runs even after return, so we can't
+    // rely on an early return to skip setLoading(false).
+    let isRetrying = false;
+
     try {
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 15000); // 15s timeout per attempt
+      const timeout = setTimeout(() => controller.abort(), 15000); // 15s per attempt
       const response = await fetch(API_URL, { signal: controller.signal });
       clearTimeout(timeout);
 
       if (!response.ok) throw new Error(`Server error: ${response.status}`);
       const data = await response.json();
       setEvents(data);
-      setStatusMsg('Loading events...');
+      setStatusMsg('');
     } catch (err) {
       console.error(`Attempt ${attempt} failed:`, err);
       if (attempt < MAX_RETRIES) {
+        isRetrying = true;
         setStatusMsg(`Backend is waking up (attempt ${attempt}/${MAX_RETRIES})... retrying in 10s ☕`);
         setTimeout(() => fetchEvents(attempt + 1), RETRY_DELAY_MS);
-        return; // keep loading=true during retry
+      } else {
+        setError(
+          'Cannot connect to the backend. The server may still be waking up — ' +
+          'please click "Retry Connection" in ~30 seconds.'
+        );
       }
-      setError(
-        'Cannot connect to the backend. The server may still be waking up — ' +
-        'please click "Retry Connection" in ~30 seconds.'
-      );
     } finally {
-      // Only stop loading if we are NOT scheduling a retry
-      if (attempt >= MAX_RETRIES || !error) setLoading(false);
+      // Only stop the spinner when we are NOT about to retry
+      if (!isRetrying) setLoading(false);
     }
   };
 
