@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: evently-backend
+    runtime: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT
+    envVars:
+      - key: CORS_ORIGIN
+        value: https://main.dnay302nx068f.amplifyapp.com
